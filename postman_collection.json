@@ -1,0 +1,322 @@
+{
+  "info": {
+    "name": "E-Commerce Payment Processing API",
+    "description": "Postman collection for Payment Processing System with RabbitMQ",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "e-commerce-rabbitmq"
+  },
+  "item": [
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has payment data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('userId');",
+                  "    pm.expect(jsonData).to.have.property('orderId');",
+                  "    pm.expect(jsonData).to.have.property('amount');",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "});",
+                  "",
+                  "// Save payment ID for later use",
+                  "if (pm.response.json().id) {",
+                  "    pm.collectionVariables.set('paymentId', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"orderId\": \"650e8400-e29b-41d4-a716-446655440002\",\n  \"amount\": 50.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"credit_card\",\n  \"last4digits\": \"4242\",\n  \"description\": \"Test payment transaction\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments"]
+            },
+            "description": "Create a new payment transaction. This will queue the payment for processing via RabbitMQ."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Payments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments"]
+            },
+            "description": "Retrieve all payment transactions."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has payment data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/payments/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{paymentId}}",
+                  "description": "Payment ID"
+                }
+              ]
+            },
+            "description": "Retrieve a specific payment by its ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Refund Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Payment status is refunded\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('refunded');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 25.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments/:id/refund",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", ":id", "refund"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{paymentId}}",
+                  "description": "Payment ID"
+                }
+              ]
+            },
+            "description": "Process a refund for a payment. Amount is optional - if not provided, a full refund is processed."
+          },
+          "response": []
+        }
+      ],
+      "description": "Payment processing endpoints"
+    },
+    {
+      "name": "Examples",
+      "item": [
+        {
+          "name": "Create Small Payment (< $1000)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440101\",\n  \"orderId\": \"650e8400-e29b-41d4-a716-446655440102\",\n  \"amount\": 50.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"credit_card\",\n  \"last4digits\": \"4242\",\n  \"description\": \"Small payment - low fraud risk\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments"]
+            },
+            "description": "Example: Small payment transaction ($50) - Low fraud risk"
+          }
+        },
+        {
+          "name": "Create Medium Payment (Medium Fraud Risk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440201\",\n  \"orderId\": \"650e8400-e29b-41d4-a716-446655440202\",\n  \"amount\": 5000.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"debit_card\",\n  \"last4digits\": \"1234\",\n  \"description\": \"Medium payment - medium fraud risk\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments"]
+            },
+            "description": "Example: Medium payment ($5000) - Medium fraud risk"
+          }
+        },
+        {
+          "name": "Create Large Payment (> $10000)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440301\",\n  \"orderId\": \"650e8400-e29b-41d4-a716-446655440302\",\n  \"amount\": 15000.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"credit_card\",\n  \"last4digits\": \"5555\",\n  \"description\": \"Large payment - high fraud risk\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments"]
+            },
+            "description": "Example: Large payment ($15000) - High fraud risk"
+          }
+        },
+        {
+          "name": "Full Refund (No Amount)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments/:id/refund",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", ":id", "refund"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{paymentId}}",
+                  "description": "Payment ID"
+                }
+              ]
+            },
+            "description": "Process a full refund (no amount specified)"
+          }
+        },
+        {
+          "name": "Partial Refund",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 25.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments/:id/refund",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", ":id", "refund"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{paymentId}}",
+                  "description": "Payment ID"
+                }
+              ]
+            },
+            "description": "Process a partial refund ($25)"
+          }
+        }
+      ],
+      "description": "Example requests for testing different payment scenarios"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
