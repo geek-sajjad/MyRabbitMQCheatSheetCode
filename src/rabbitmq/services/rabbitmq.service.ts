@@ -110,12 +110,13 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     queue: string,
     messageBuffer: Buffer,
     options: amqp.Options.AssertQueue = { durable: false },
+    messageOptions?: amqp.Options.Publish,
     logPrefix?: string,
   ): Promise<boolean> {
     await this.ensureChannel();
     await this.channel.assertQueue(queue, options);
 
-    const sent = this.channel.sendToQueue(queue, messageBuffer);
+    const sent = this.channel.sendToQueue(queue, messageBuffer, messageOptions);
     if (sent && logPrefix) {
       console.log(logPrefix);
     }
@@ -148,6 +149,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         queue,
         messageBuffer,
         { durable: false },
+        undefined,
         `📤 Sent payment ${payment.id} to ${queue} queue`,
       );
 
@@ -169,6 +171,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
           queue,
           messageBuffer,
           { durable: false },
+          undefined,
           `📤 Sent payment ${payment.id} to ${queue} queue (after reconnection)`,
         );
 
@@ -180,7 +183,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      // Log and throw for non-channel errors
+      // Log and throw for other errors
       console.error(
         `❌ Failed to send payment ${payment.id} to RabbitMQ queue '${queue}':`,
         error.message,

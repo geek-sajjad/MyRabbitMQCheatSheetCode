@@ -1,5 +1,4 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import * as amqp from 'amqplib';
 import { RabbitMQService } from '../services/rabbitmq.service';
 import { PaymentService } from '../../payment/services/payment.service';
 

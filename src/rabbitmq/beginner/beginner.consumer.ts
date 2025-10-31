@@ -56,8 +56,8 @@ export class BeginnerConsumer implements OnModuleInit {
   private async consumePayments() {
     const channel = this.rabbitMQService.getChannel();
 
-    // Assert queue exists
-    await channel.assertQueue(this.queue);
+    // Assert queue exists (non-durable queue)
+    await channel.assertQueue(this.queue, { durable: false });
 
     console.log(`🎓 [BEGINNER] Consumer started on queue: ${this.queue}`);
 

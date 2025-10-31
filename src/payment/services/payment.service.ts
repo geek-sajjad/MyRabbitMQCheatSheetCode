@@ -27,13 +27,13 @@ export class PaymentService {
     await this.rabbitMQService.sendToPaymentQueue(savedPayment);
 
     // INTERMEDIATE: Also send to durable work queue
-    // await this.rabbitMQService.sendToWorkQueue('payment_processing', {
-    //   paymentId: savedPayment.id,
-    //   userId: savedPayment.userId,
-    //   orderId: savedPayment.orderId,
-    //   amount: savedPayment.amount,
-    //   currency: savedPayment.currency,
-    // });
+    await this.rabbitMQService.sendToWorkQueue('payment_processing', {
+      paymentId: savedPayment.id,
+      userId: savedPayment.userId,
+      orderId: savedPayment.orderId,
+      amount: savedPayment.amount,
+      currency: savedPayment.currency,
+    });
 
     // // INTERMEDIATE: Send to fraud check queue
     // await this.rabbitMQService.sendToWorkQueue('fraud_check', {
@@ -87,16 +87,16 @@ export class PaymentService {
       await this.paymentRepository.save(payment);
 
       // ADVANCED: Send event to topic exchange
-      // await this.rabbitMQService.sendToTopicExchange(
-      //   'payment_events',
-      //   'payment.complete',
-      //   {
-      //     paymentId: payment.id,
-      //     type: 'complete',
-      //     amount: payment.amount,
-      //     userId: payment.userId,
-      //   },
-      // );
+      await this.rabbitMQService.sendToTopicExchange(
+        'payment_events',
+        'payment.complete',
+        {
+          paymentId: payment.id,
+          type: 'complete',
+          amount: payment.amount,
+          userId: payment.userId,
+        },
+      );
 
       console.log(`✅ Payment ${payment.id} processed successfully`);
     } catch (error) {
