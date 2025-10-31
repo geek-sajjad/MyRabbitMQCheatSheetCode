@@ -7,6 +7,7 @@ import { Payment } from '../../payment/entities/payment.entity';
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private connection: amqp.Connection;
   private channel: amqp.Channel;
+  private channelModel: amqp.ChannelModel;
 
   constructor(private configService: RabbitMQConfigService) {}
 
@@ -15,19 +16,35 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    if (this.channel) await this.channel.close();
+    try {
+      if (this.channel) {
+        await this.channel.close();
+        console.log('✅ RabbitMQ channel closed');
+      }
+      if (this.channelModel) {
+        await this.channelModel.close();
+        console.log('✅ RabbitMQ connection closed');
+      }
+    } catch (error) {
+      console.error('❌ Error during RabbitMQ cleanup:', error.message);
+    }
   }
 
   private async connect() {
-    // Close existing channel silently if it exists
+    // Close existing channel and connection silently if they exist
     if (this.channel) {
       await this.channel.close().catch(() => {
         // Ignore errors when closing (channel might already be closed)
       });
     }
+    if (this.channelModel) {
+      await this.channelModel.close().catch(() => {
+        // Ignore errors when closing (connection might already be closed)
+      });
+    }
 
-    const channelModel = await amqp.connect(this.configService.connectionUrl);
-    this.channel = await channelModel.createChannel();
+    this.channelModel = await amqp.connect(this.configService.connectionUrl);
+    this.channel = await this.channelModel.createChannel();
     this.connection = this.channel.connection;
 
     // Set up error handlers
@@ -47,6 +64,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       console.warn('⚠️ RabbitMQ connection closed');
       this.channel = null;
       this.connection = null;
+      this.channelModel = null;
     });
 
     console.log('✅ Connected to RabbitMQ');
